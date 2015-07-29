@@ -35,41 +35,41 @@ type Game() =
     let incrementFrameNr() =
         currentFrameNr <- currentFrameNr + 1
 
-    let setFrameScore(frameNr, score) =
+    let setFrameScore frameNr score =
         if not(isValidFrameNr(frameNr)) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
         if isRegularFrameNr(frameNr) then
             if not(frameScores.ContainsKey(frameNr)) then frameScores.Add(frameNr, score)
             else frameScores.Item(frameNr) <- score
 
-    let getFrameScore(frameNr) =
+    let getFrameScore frameNr =
         if not(frameScores.ContainsKey(frameNr)) then frameScores.Add(frameNr, 0)
         frameScores.[frameNr];
 
-    let setFrameResult(frameNr, result:FrameResult) =
+    let setFrameResult frameNr frameResult =
         if not(isValidFrameNr(frameNr)) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
         
-        if not(frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, result)
-        else frameResults.Item(frameNr) <- result
+        if not(frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, frameResult)
+        else frameResults.Item(frameNr) <- frameResult
 
-    let getFrameResult(frameNr:int) =
+    let getFrameResult frameNr =
         if not(frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, Normal)
         frameResults.[frameNr];
 
-    let updatePreviousFrameScores(frameNr, pins) =        
+    let updatePreviousFrameScores frameNr pins =        
         if frameNr > 1 then
             let previousFrameResult = getFrameResult(frameNr - 1)
 
             if (previousFrameResult = Spare && isFirstThrow) || previousFrameResult = Strike then
-                setFrameScore(frameNr - 1, getFrameScore(frameNr - 1) + pins)
+                setFrameScore (frameNr - 1) (getFrameScore(frameNr - 1) + pins)
             
             if frameNr > 2 then
                 if getFrameResult(frameNr - 2) = Strike && previousFrameResult = Strike then
-                    setFrameScore(frameNr - 2, getFrameScore(frameNr - 2) + pins)    
+                    setFrameScore (frameNr - 2) (getFrameScore(frameNr - 2) + pins)    
 
     member this.CurrentScore = 
         Seq.sum(frameScores.Values)
 
-    member this.Gooi(pins:int) =
+    member this.Gooi pins =
         if not(isGameActive) then raise (GameNotActiveException("Game has ended"))
 
         if pins < 0 || pins > 10 then raise (InvalidPinCountException("Pin count should be higher than or equal to 0 and less than or equal to 10"))        
@@ -79,8 +79,8 @@ type Game() =
 
         let mutable frameResult = Normal
 
-        setFrameScore(currentFrameNr, frameScore)
-        updatePreviousFrameScores(currentFrameNr, pins)
+        setFrameScore currentFrameNr frameScore
+        updatePreviousFrameScores currentFrameNr pins
 
         if frameScore = 10 then 
             if isFirstThrow then frameResult <- Strike
@@ -89,7 +89,7 @@ type Game() =
         else 
             isFirstThrow <- not(isFirstThrow)
 
-        setFrameResult(currentFrameNr, frameResult)
+        setFrameResult currentFrameNr frameResult
 
         if isFirstThrow then             
             incrementFrameNr()
@@ -99,7 +99,7 @@ type Game() =
                 isGameActive <- false
 
 
-    member this.ScoreVoorFrame(frameNr:int) =
+    member this.ScoreVoorFrame frameNr =
         let mutable cumulativeScore = 0
         for i = 1 to frameNr do
             cumulativeScore <- cumulativeScore + getFrameScore(i)
