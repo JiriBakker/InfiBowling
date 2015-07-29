@@ -14,6 +14,8 @@ type GameNotActiveException(message) =
 
 type FrameResult = Normal | Spare | Strike
 
+type GameState = ReadyForFirstThrow | ReadyForSecondThrow | GameFinished
+
 type Game() =
 
     let frameScores = new Dictionary<int, int>()
@@ -22,23 +24,30 @@ type Game() =
 
     let mutable currentFrameNr = 1
 
-    let mutable isFirstThrow = true
+    let mutable gameState = ReadyForFirstThrow
 
-    let mutable isGameActive = true
-
-    let isValidFrameNr(frameNr) =
+    let isValidFrameNr frameNr =
         frameNr >= 1 && frameNr <= 12 
 
-    let isRegularFrameNr(frameNr) =
+    let isRegularFrameNr frameNr =
         frameNr >= 1 && frameNr <= 10
 
-    let incrementFrameNr() =
+    let incrementFrameNr =
         currentFrameNr <- currentFrameNr + 1
 
+    let isFirstThrow =
+        gameState = ReadyForFirstThrow
+
+    let toggleFirstThrow =
+        match gameState with
+            | ReadyForFirstThrow  -> gameState <- ReadyForSecondThrow
+            | ReadyForSecondThrow -> gameState <- ReadyForFirstThrow
+            | GameFinished        -> raise (GameNotActiveException("Game has ended"))
+
     let setFrameScore frameNr score =
-        if not(isValidFrameNr(frameNr)) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
+        if not (isValidFrameNr frameNr) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
         if isRegularFrameNr(frameNr) then
-            if not(frameScores.ContainsKey(frameNr)) then frameScores.Add(frameNr, score)
+            if not (frameScores.ContainsKey(frameNr)) then frameScores.Add(frameNr, score)
             else frameScores.Item(frameNr) <- score
 
     let getFrameScore frameNr =
@@ -46,13 +55,13 @@ type Game() =
         frameScores.[frameNr];
 
     let setFrameResult frameNr frameResult =
-        if not(isValidFrameNr(frameNr)) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
+        if not (isValidFrameNr frameNr) then raise (InvalidFrameNumberExceptoin("Frame number should be higher than or equal to 1 and less than or equal to 12"))     
         
-        if not(frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, frameResult)
+        if not (frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, frameResult)
         else frameResults.Item(frameNr) <- frameResult
 
     let getFrameResult frameNr =
-        if not(frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, Normal)
+        if not (frameResults.ContainsKey(frameNr)) then frameResults.Add(frameNr, Normal)
         frameResults.[frameNr];
 
     let updatePreviousFrameScores frameNr pins =        
@@ -70,7 +79,7 @@ type Game() =
         Seq.sum(frameScores.Values)
 
     member this.Gooi pins =
-        if not(isGameActive) then raise (GameNotActiveException("Game has ended"))
+        if gameState = GameFinished then raise (GameNotActiveException("Game has ended"))
 
         if pins < 0 || pins > 10 then raise (InvalidPinCountException("Pin count should be higher than or equal to 0 and less than or equal to 10"))        
 
@@ -85,18 +94,18 @@ type Game() =
         if frameScore = 10 then 
             if isFirstThrow then frameResult <- Strike
             else frameResult <- Spare
-            isFirstThrow <- true
+            gameState <- ReadyForFirstThrow
         else 
-            isFirstThrow <- not(isFirstThrow)
+            toggleFirstThrow
 
         setFrameResult currentFrameNr frameResult
 
         if isFirstThrow then             
-            incrementFrameNr()
+            incrementFrameNr
             if currentFrameNr > 12 ||
                 (currentFrameNr = 12 && getFrameResult(11) = Normal) ||
                 (currentFrameNr = 11 && getFrameResult(10) = Normal) then
-                isGameActive <- false
+                gameState <- GameFinished
 
 
     member this.ScoreVoorFrame frameNr =
