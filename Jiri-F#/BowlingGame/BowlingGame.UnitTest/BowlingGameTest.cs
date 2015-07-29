@@ -117,16 +117,6 @@ namespace BowlingGame.UnitTest {
         }
 
         [TestMethod]
-        public void Gooi10ZorgtDatVolgendeFrameStart()
-        {
-            var game = GetGame();
-
-            game.Gooi(10);
-
-            Assert.AreEqual(2, game.CurrentFrameNr);
-        }
-
-        [TestMethod]
         public void Gooi10EnGooi2ZorgtDat2WordtOpgeteldBijScoreFrame1()
         {
             var game = GetGame();
